@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Runtime;
-using System.Collections.Generic;
 
 namespace AreaLib
 {
-    public class Figure
+    public class Figure : IFigure
     {
-        readonly List<double> FigureSides;
+        readonly double[] FigureSides;
         readonly int FigureSidesCount;
         readonly bool IsRightTriangle;
 
@@ -25,12 +23,10 @@ namespace AreaLib
             switch (FigureSidesCount)
             {
                 case 1:
-                    // NOTE какая предварительная обработка требуется кругу?
                     break;
                 /// проверка сторон треугольника
                 case 3:
                     double perimeter = Perimeter(sides);
-                    // TODO ? заменить поиск наибольшего элемента сортировкой массива и обращением к первому элементу
                     double maxSide = GetMaxSide(sides);
                     if (perimeter - maxSide - maxSide < Staff.Accuracy)
                     {
@@ -43,25 +39,19 @@ namespace AreaLib
                     break;
             }
 
-            foreach (double side in sides)
-            {
-                FigureSides.Add(side);
-            }
+            FigureSides = sides;
         }
 
         #region Внутренние методы для рассчета площади
         public double GetArea()
         {
-            switch (FigureSides.Count)
+            return FigureSidesCount switch
             {
-                case 1:
-                    return GetCircleArea();
-                case 3:
-                    return GetTriangleArea();
-                default:
-                    throw new Exception($"Не описано метода для вчисления площади фигуры" +
-                    $"с данным количеством сторон {FigureSides.Count}.");
-            }
+                1 => GetCircleArea(),
+                3 => GetTriangleArea(),
+                _ => throw new Exception($"Не описано метода для вчисления площади фигуры" +
+                                         $"с данным количеством сторон {FigureSidesCount}."),
+            };
         }
 
         private double GetCircleArea()
@@ -91,57 +81,59 @@ namespace AreaLib
 
         private double GetRightTriangleArea()
         {
-            double Area = 0;
-            // TODO внутренняя функция площади прямоугольного треугольника (полупериметр в аргументы?)
-            GetMaxSide(FigureSides);
+            double Area;
+            double maxSide = GetMaxSide(FigureSides);
+            
+            if (FigureSides[0] == maxSide) Area = FigureSides[1] * FigureSides[2] / 2 ;
+            else if (FigureSides[1] == maxSide) Area = FigureSides[0] * FigureSides[2] / 2;
+            else Area = FigureSides[0] * FigureSides[1] / 2;
+            
             return Area;
         }
         #endregion
 
-        #region Внешние методы для рассчета площади
+        #region Методы для рассчета площади без создания объекта фигуры
         public double GetArea(double[] sides)
         {
-            switch (sides.Length)
+            return sides.Length switch
             {
-                case 1:
-                    return GetCircleArea(sides);
-                case 3:
-                    return GetTriangleArea(sides);
-                default:
-                    throw new Exception($"Не описано метода для вчисления площади фигуры " +
-                                        $"с данным количеством сторон {FigureSides.Count}.");
-            }
+                1 => GetCircleArea(sides),
+                3 => GetTriangleArea(sides),
+                _ => throw new Exception($"Не описано метода для вчисления площади фигуры " +
+                                         $"с данным количеством сторон {sides.Length}."),
+            };
         }
 
         public double GetCircleArea(double[] sides)
         {
-            // TODO вариант площали круга без создания фигуры
             double Area;
-            Area = Math.PI * Math.Pow(FigureSides[0], 2);
+            Area = Math.PI * Math.Pow(sides[0], 2);
             return Area;
         }
 
         public double GetTriangleArea(double[] sides)
         {
-            // TODO вариант поиска площади треугольника без создания фигуры
             double Area;
             double SemiPerimeter = (Perimeter(FigureSides) / 2);
             
-            GetIsRightTriangle(sides, GetMaxSide(sides));
-
-            if (IsRightTriangle)
+            if (GetIsRightTriangle(sides, GetMaxSide(sides)))
             {
                 Area = GetRightTriangleArea(sides);
             }
-            else Area = Math.Sqrt(SemiPerimeter * (SemiPerimeter - FigureSides[0])
-                                                * (SemiPerimeter - FigureSides[1])
-                                                * (SemiPerimeter - FigureSides[2]));
+            else Area = Math.Sqrt(SemiPerimeter * (SemiPerimeter - sides[0])
+                                                * (SemiPerimeter - sides[1])
+                                                * (SemiPerimeter - sides[2]));
             return Area;
         }
         private double GetRightTriangleArea(double[] sides)
         {
-            double Area = 0;
-            // TODO внешняя функция площади прямоугольного треугольника
+            double Area;
+            double maxSide = GetMaxSide(sides);
+
+            if (sides[0] == maxSide) Area = sides[1] * sides[2] / 2;
+            else if (sides[1] == maxSide) Area = sides[0] * sides[2] / 2;
+            else Area = sides[0] * sides[1] / 2;
+
             return Area;
         }
         #endregion
@@ -161,18 +153,6 @@ namespace AreaLib
             for (int i = 1; i < sides.Length-1; i++)
             {
                 partSides[i - 1] = sides[i];
-            }
-
-            return Math.Max(sides[0], GetMaxSide(partSides));
-        }
-
-        private double GetMaxSide(List<double> sides)
-        {
-            List<double> partSides = new List<double>();
-
-            for (int i = 1; i < sides.Count - 1; i++)
-            {
-                partSides.Add(sides[i]);
             }
 
             return Math.Max(sides[0], GetMaxSide(partSides));
@@ -203,13 +183,6 @@ namespace AreaLib
 
         # region perimeters
         public double Perimeter(double[] sides)
-        {
-            double perimeter = 0;
-            foreach (double side in sides) perimeter += side;
-            return perimeter;
-        }
-
-        public double Perimeter(List<double> sides)
         {
             double perimeter = 0;
             foreach (double side in sides) perimeter += side;
