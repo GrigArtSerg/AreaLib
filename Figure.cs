@@ -7,6 +7,12 @@ namespace AreaLib
         readonly double[] FigureSides;
         readonly int FigureSidesCount;
         readonly bool IsRightTriangle;
+        readonly double MaxSide;
+
+        public double[] GetFigureSides { get { return FigureSides; } }
+        public int GetfigureSidesCount { get { return FigureSidesCount; } }
+        public bool GetIsRightTriangle { get { return IsRightTriangle; } }
+        public double GetMaxSide { get { return MaxSide; } }
 
         /// <summary>
         /// Конструтор создания фигуры
@@ -24,19 +30,15 @@ namespace AreaLib
             {
                 case 1:
                     break;
-                /// проверка сторон треугольника
+                /// сумма сторон треугольника больше третьей
                 case 3:
-                    double perimeter = Perimeter(sides);
-                    double maxSide = GetMaxSide(sides);
-                    if (perimeter - maxSide - maxSide < Staff.Accuracy)
-                    {
-                        throw new Exception("Наибольшая сторона треугольника должна быть меньше суммы других сторон.");
-                    }
-
-                    IsRightTriangle = GetIsRightTriangle(sides, maxSide);
+                    MaxSide = SetMaxSide(sides);
+                    TriangleIsTriangle(sides);
+                    IsRightTriangle = SetIsRightTriangle(sides);
                     break;
                 default:
-                    break;
+                    throw new Exception($"Не описано метода для вычисления площади фигуры" +
+                                         $"с данным количеством сторон {FigureSidesCount}.");
             }
 
             FigureSides = sides;
@@ -82,19 +84,20 @@ namespace AreaLib
         private double GetRightTriangleArea()
         {
             double Area;
-            double maxSide = GetMaxSide(FigureSides);
-            
-            if (FigureSides[0] == maxSide) Area = FigureSides[1] * FigureSides[2] / 2 ;
-            else if (FigureSides[1] == maxSide) Area = FigureSides[0] * FigureSides[2] / 2;
+
+            if (FigureSides[0] == MaxSide) Area = FigureSides[1] * FigureSides[2] / 2;
+            else if (FigureSides[1] == MaxSide) Area = FigureSides[0] * FigureSides[2] / 2;
             else Area = FigureSides[0] * FigureSides[1] / 2;
-            
+
             return Area;
         }
         #endregion
 
-        #region Методы для рассчета площади без создания объекта фигуры
+        /*
+        #region Методы для рассчета площади с прямой передачей параметров
         public double GetArea(double[] sides)
         {
+            // TODO проверять существует ли уже 
             return sides.Length switch
             {
                 1 => GetCircleArea(sides),
@@ -115,8 +118,8 @@ namespace AreaLib
         {
             double Area;
             double SemiPerimeter = (Perimeter(FigureSides) / 2);
-            
-            if (GetIsRightTriangle(sides, GetMaxSide(sides)))
+
+            if (SetIsRightTriangle(sides, SetMaxSide(sides)))
             {
                 Area = GetRightTriangleArea(sides);
             }
@@ -128,7 +131,7 @@ namespace AreaLib
         private double GetRightTriangleArea(double[] sides)
         {
             double Area;
-            double maxSide = GetMaxSide(sides);
+            double maxSide = SetMaxSide(sides);
 
             if (sides[0] == maxSide) Area = sides[1] * sides[2] / 2;
             else if (sides[1] == maxSide) Area = sides[0] * sides[2] / 2;
@@ -137,7 +140,7 @@ namespace AreaLib
             return Area;
         }
         #endregion
-
+        */
         private void ValuesCheck(double[] sides)
         {
             for (int i = 0; i < sides.Length; i++)
@@ -146,28 +149,35 @@ namespace AreaLib
             }
         }
 
-        private double GetMaxSide(double[] sides)
+        private double SetMaxSide(double[] sides)
         {
-            double[] partSides = new double[sides.Length - 1];
-            
-            for (int i = 1; i < sides.Length-1; i++)
+            double maxSide = 0;
+            for (int i = 0; i < sides.Length; i++)
             {
-                partSides[i - 1] = sides[i];
+                if (maxSide < sides[i]) maxSide = sides[i];
             }
-
-            return Math.Max(sides[0], GetMaxSide(partSides));
+            return maxSide;
         }
 
-        private bool GetIsRightTriangle(double[] sides, double maxSide)
+        private void TriangleIsTriangle(double[] sides)
+        {
+            double perimeter = Perimeter(sides);
+            if (perimeter - MaxSide - MaxSide < Staff.Accuracy)
+            {
+                throw new Exception("Наибольшая сторона треугольника должна быть меньше суммы других сторон.");
+            }
+        }
+
+        private bool SetIsRightTriangle(double[] sides)
         {
             double a, b;
 
-            if (sides[0] == maxSide)
+            if (sides[0] == MaxSide)
             {
                 a = sides[1];
                 b = sides[2];
             }
-            else if (sides[1] == maxSide)
+            else if (sides[1] == MaxSide)
             {
                 a = sides[0];
                 b = sides[2];
@@ -178,16 +188,14 @@ namespace AreaLib
                 b = sides[1];
             }
 
-            return Math.Abs(Math.Pow(maxSide, 2) - Math.Pow(a, 2) - Math.Pow(b, 2)) < Staff.Accuracy;
+            return Math.Abs(Math.Pow(MaxSide, 2) - Math.Pow(a, 2) - Math.Pow(b, 2)) < Staff.Accuracy;
         }
 
-        # region perimeters
         public double Perimeter(double[] sides)
         {
             double perimeter = 0;
             foreach (double side in sides) perimeter += side;
             return perimeter;
         }
-        #endregion
     }
 }
